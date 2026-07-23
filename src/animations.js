@@ -5,28 +5,45 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function initAnimations() {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const reveals = document.querySelectorAll(".reveal");
+  const reveals = [...document.querySelectorAll(".reveal")];
+  const showImmediately = () => {
+    reveals.forEach((element) => {
+      element.classList.add("is-revealed");
+      gsap.set(element, { clearProps: "opacity,transform" });
+    });
+  };
 
   if (reduceMotion) {
-    gsap.set(reveals, { clearProps: "all" });
+    showImmediately();
     return () => {};
   }
 
-  gsap.set(reveals, { opacity: 0, y: 28 });
   const triggers = [];
-  reveals.forEach((element) => {
-    const tween = gsap.to(element, {
-      opacity: 1,
-      y: 0,
-      duration: 0.75,
-      ease: "power3.out",
-      scrollTrigger: { trigger: element, start: "top 86%", once: true },
+  try {
+    gsap.set(reveals, { opacity: 0, y: 28 });
+    reveals.forEach((element) => {
+      const tween = gsap.to(element, {
+        opacity: 1,
+        y: 0,
+        duration: 0.75,
+        ease: "power3.out",
+        scrollTrigger: { trigger: element, start: "top 86%", once: true },
+      });
+      if (tween.scrollTrigger) triggers.push(tween.scrollTrigger);
     });
-    if (tween.scrollTrigger) triggers.push(tween.scrollTrigger);
-  });
 
-  gsap.fromTo(".heroCopy", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1, delay: 0.15, ease: "power3.out" });
-  gsap.fromTo(".heroMeta, .heroFoot", { opacity: 0 }, { opacity: 1, duration: 0.8, delay: 0.45, ease: "power2.out" });
+    [
+      [".heroCopy", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.9, delay: 0.05, ease: "power3.out" }],
+      [".heroMeta", { opacity: 0 }, { opacity: 1, duration: 0.7, delay: 0.2, ease: "power2.out" }],
+      [".heroFoot", { opacity: 0 }, { opacity: 1, duration: 0.7, delay: 0.35, ease: "power2.out" }],
+    ].forEach(([selector, from, to]) => {
+      if (document.querySelector(selector)) gsap.fromTo(selector, from, to);
+    });
+  } catch {
+    triggers.forEach((trigger) => trigger.kill());
+    showImmediately();
+    return () => {};
+  }
 
   return () => {
     triggers.forEach((trigger) => trigger.kill());
